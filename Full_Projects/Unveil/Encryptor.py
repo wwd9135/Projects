@@ -40,7 +40,6 @@ class Caller:
             print(f"An error occurred: {e}")
 
     def docx(self):
-        pass
         try:
             file_name = input("Enter your docx file name: ")
             doc = Document(file_name)
