@@ -1,3 +1,5 @@
+# TODO- Convert this initital scrapbook style script into JSON data so python can parse it and generate a report. This is just a quick way to collect data for the parsing script development.
+
 <#
 .SYNOPSIS
     Generates a forensics report for a specific windows device, as part of a triage process.
