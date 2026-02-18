@@ -1,3 +1,9 @@
+
+TODO:
+Add TOML file & init file.
+Test on VENV/ multiple windows updates/ devices.
+
+
 # Overview
 This parsing folder will be used to parse my PowerShell data, I will include tests, logging and example input and output to make this tool simpler to follow and use.
 
