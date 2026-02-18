@@ -1,5 +1,5 @@
 # ===============================
-# TRIDENT – Endpoint Triage Tool
+# Trig – Endpoint Triage Tool
 # Author: William Richardson
 # ===============================
 
@@ -20,10 +20,11 @@ $Meta = [PSCustomObject]@{
     Username     = $env:USERNAME
     Domain       = $env:USERDOMAIN
     TimestampUtc = (Get-Date).ToUniversalTime().ToString("o")
-    Script       = "TRIDENT"
-    Version      = "0.1"
+    Script       = "Triage_Collector2.ps1"
+    Version      = "1.0.0"
     IsAdmin      = $isAdmin
 }
+
 
 # --- General System Info ---
 $System = Get-ComputerInfo |
@@ -88,8 +89,7 @@ $Advanced = [PSCustomObject]@{
 }
 
 # --- Final Report Object ---
-$TriageReport = [PSCustomObject]@{
-    Meta         = $Meta
+$Payload = [PSCustomObject]@{
     System       = $System
     Network      = $Network
     Processes    = $Processes
@@ -98,8 +98,25 @@ $TriageReport = [PSCustomObject]@{
     Advanced     = $Advanced
 }
 
+$PayloadHash = [System.BitConverter]::ToString(
+    (New-Object System.Security.Cryptography.SHA256Managed).ComputeHash(
+        [System.Text.Encoding]::UTF8.GetBytes(
+            ($Payload | ConvertTo-Json -Depth 10)
+        )
+    )
+).Replace("-", "")
+
+$TriageReport = [PSCustomObject]@{
+    Meta      = $Meta
+    Payload   = $Payload
+    Integrity = @{
+        PayloadSHA256 = $PayloadHash
+        Algorithm     = "SHA-256"
+        Scope         = "Payload"
+    }
+}
 # --- Export ---
-$OutputPath = Join-Path $PWD "Triage.json"
+$OutputPath = Join-Path $PWD "Trig.json"
 $TriageReport |
     ConvertTo-Json -Depth 6 |
     Out-File -Encoding UTF8 $OutputPath
