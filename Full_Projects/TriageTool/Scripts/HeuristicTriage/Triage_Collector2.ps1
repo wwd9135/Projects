@@ -1,38 +1,107 @@
-# Refactored the Triage_Collector.ps1 script to change all output to JSON format for better parsing and report generation. The new script is named Triage_Collector2.ps1 and includes the same data collection but outputs it in a structured JSON format. This will allow for easier integration with Python parsing scripts to generate comprehensive reports.
+# ===============================
+# TRIDENT – Endpoint Triage Tool
+# Author: William Richardson
+# ===============================
 
-# Example code to copy for the 
-<#
-.SYNOPSIS
-    Generates a heuristic compliance report for a specific list of Intune-managed devices.
-.DESCRIPTION
-    This script is a heuristic windows forensics tool, creating a device wide report, focusing on wider smoking guns and obvious signs of compromise.
-    Output is intentionally all JSON objects, allowing python to digest this data and easily parse the data and feed it to a LLM if necessary.
-.NOTES
-    Author: William Richardson
-    Date: 03/02/2026
-    Required Permissions: System admin access. 
-#>
+$ErrorActionPreference = 'SilentlyContinue'
 
-# --- Environment Validation ---
+# --- Privilege Check ---
+$isAdmin = ([Security.Principal.WindowsPrincipal] `
+    [Security.Principal.WindowsIdentity]::GetCurrent()
+).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
-$ErrorActionPreference= 'silentlycontinue'
-# Check for Admin Rights
-if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) {
-    Write-Host 'You must run TRIDENT using elevated privileges session...'
-    Exit 1
-}
-$ip = ((ipconfig | findstr [0-9].\.)[0]).Split()[-1]
-$cname = (gi env:\Computername).Value
-Write-Host "Collecting data for $cname ($ip) | $(Get-Date -Format dd/MM/yyyy-H:mm:ss)"
-
-
-$data = {
-"==== GENERAL INFORMATION ===="
-Get-ComputerInfo | Format-List -Property CsDNSHostName, CsDomain, OsName, OsVersion, OsBuildNumber, OsArchitecture, OsUptime, OsLocalDateTime, TimeZone, OsSerialNumber, OsMuiLanguages, OsHotFixes, WindowsRegisteredOrganization, WindowsRegisteredOwner, WindowsSystemRoot, OsPagingFiles, CsManufacturer, CsModel, CsName, CsProcessors, CsNetworkAdapters, BiosBIOSVersion, BiosSeralNumber, BiosFirmwareType, CsDomainRole, OsStatus, OsSuites, LogonServer, DeviceGuardSmartStatus, DeviceGuardRequiredSecurityProperties, DeviceGuardAvailableSecurityProperties, DeviceGuardSecurityServicesConfigured, DeviceGuardSecurityServicesRunning, DeviceGuardCodeIntegrityPolicyEnforcementStatus, DeviceGuardUserModeCodeIntegrityPolicyEnforcementStatus
-systeminfo
-"----------------------------------------
-"
+if (-not $isAdmin) {
+    throw "TRIDENT must be run with administrative privileges"
 }
 
-& $data | Out-File -FilePath $pwd\TRIDENT_$cname.txt
-Write-Host "Collection saved in $pwd\TRIDENT_$cname.txt" -ForegroundColor Green
+# --- Metadata ---
+$Meta = [PSCustomObject]@{
+    ComputerName = $env:COMPUTERNAME
+    Username     = $env:USERNAME
+    Domain       = $env:USERDOMAIN
+    TimestampUtc = (Get-Date).ToUniversalTime().ToString("o")
+    Script       = "TRIDENT"
+    Version      = "0.1"
+    IsAdmin      = $isAdmin
+}
+
+# --- General System Info ---
+$System = Get-ComputerInfo |
+    Select-Object `
+        CsDNSHostName, CsDomain, OsName, OsVersion, OsBuildNumber,
+        OsArchitecture, OsUptime, TimeZone, OsSerialNumber,
+        CsManufacturer, CsModel, BiosBIOSVersion
+
+# --- Network ---
+$Network = [PSCustomObject]@{
+    Interfaces = Get-NetIPAddress |
+        Select-Object InterfaceAlias, IPAddress, AddressFamily, PrefixOrigin
+
+    Connections = Get-NetTCPConnection |
+        Select-Object LocalAddress, LocalPort, RemoteAddress, RemotePort, State, OwningProcess
+
+    DnsCache = Get-DnsClientCache |
+        Select-Object Entry, Data
+}
+
+# --- Processes ---
+$Processes = Get-Process -IncludeUserName |
+    Select-Object `
+        Name, Id, Path, Company, CPU, StartTime, UserName
+
+# --- Persistence ---
+$Persistence = [PSCustomObject]@{
+    StartupCommands = Get-CimInstance Win32_StartupCommand |
+        Select-Object Name, Command, Location, User
+
+    ScheduledTasks = Get-ScheduledTask |
+        Where-Object State -ne 'Disabled' |
+        Select-Object TaskName, TaskPath, State
+
+    Services = Get-CimInstance Win32_Service |
+        Select-Object Name, PathName, StartMode, State, ProcessId
+}
+
+# --- User Activity ---
+$UserActivity = [PSCustomObject]@{
+    UsbDevices = Get-ItemProperty `
+        'HKLM:\SYSTEM\CurrentControlSet\Enum\USBSTOR\*\*' |
+        Select-Object FriendlyName
+
+    PowerShellHistory = Get-History |
+        Select-Object Id, CommandLine, StartExecutionTime
+}
+
+# --- Advanced Forensics ---
+$Advanced = [PSCustomObject]@{
+    Prefetch = Get-ChildItem C:\Windows\Prefetch\ |
+        Select-Object Name, CreationTime, LastWriteTime
+
+    WmiSubscriptions = Get-WmiObject `
+        -Namespace root\subscription `
+        -Class __FilterToConsumerBinding |
+        Select-Object Filter, Consumer
+
+    DefenderExclusions = Get-ChildItem `
+        'HKLM:\SOFTWARE\Microsoft\Windows Defender\Exclusions' |
+        Select-Object Name
+}
+
+# --- Final Report Object ---
+$TriageReport = [PSCustomObject]@{
+    Meta         = $Meta
+    System       = $System
+    Network      = $Network
+    Processes    = $Processes
+    Persistence  = $Persistence
+    UserActivity = $UserActivity
+    Advanced     = $Advanced
+}
+
+# --- Export ---
+$OutputPath = Join-Path $PWD "Triage.json"
+$TriageReport |
+    ConvertTo-Json -Depth 6 |
+    Out-File -Encoding UTF8 $OutputPath
+
+Write-Host "Triage collection saved to $OutputPath" -ForegroundColor Green
