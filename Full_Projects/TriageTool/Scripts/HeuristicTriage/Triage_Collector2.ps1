@@ -122,38 +122,8 @@
                 DefenderExclusions = $DefenderExclusions
             }
 
-            # --- Final Payload ---
-            $Payload = [PSCustomObject]@{
-                System       = $System
-                Network      = $Network
-                Processes    = $Processes
-                Persistence  = $Persistence
-                UserActivity = $UserActivity
-                Advanced     = $Advanced
-            }
-
-            # --- Payload Hash (matching final export) ---
-            $PayloadJson = $Payload | ConvertTo-Json -Depth 10
-            # --- DEBUG: Dump EXACT bytes PowerShell hashed ---
-            $DebugPath = Join-Path $PWD "payload_exact_ps.txt"
-            [System.IO.File]::WriteAllText($DebugPath, $PayloadJson, [System.Text.Encoding]::UTF8)
-
-            Write-Host "DEBUG: Raw payload JSON saved to payload_exact_ps.txt" -ForegroundColor Yellow
-
-            # Also dump the byte-level hex for comparison
-            $ByteDump = ($PayloadJson.ToCharArray() | ForEach-Object {
-                [System.Text.Encoding]::UTF8.GetBytes($_)
-            } | ForEach-Object {
-                $_
-            } | ForEach-Object {
-                '{0:X2}' -f $_
-            }) -join ' '
-
-            $HexDumpPath = Join-Path $PWD "payload_exact_ps_hex.txt"
-            Set-Content -Path $HexDumpPath -Value $ByteDump -Encoding ASCII
-
                 # --- Final Payload ---
-            $Payload = [PSCustomObject]@{
+            $Payload = [ordered]@{
                 System       = $System
                 Network      = $Network
                 Processes    = $Processes
@@ -162,25 +132,25 @@
                 Advanced     = $Advanced
             }
 
-                        # Canonical JSON for cross-language hashing
-            $PayloadJson = $Payload | ConvertTo-Json -Depth 10 -Compress
-
-            $PayloadHash = [Convert]::ToHexString(
-                [System.Security.Cryptography.SHA256]::Create().ComputeHash(
-                    [System.Text.Encoding]::UTF8.GetBytes($PayloadJson)
-                )
+        $PayloadJson = $Payload | ConvertTo-Json -Depth 100 -Compress -EscapeHandling None
+        $PayloadHash = [Convert]::ToHexString(
+            [System.Security.Cryptography.SHA256]::Create().ComputeHash(
+                [System.Text.Encoding]::UTF8.GetBytes($PayloadJson)
             )
+        )
 
-            $TriageReport = [PSCustomObject]@{
-                Meta      = $Meta
-                Payload   = $Payload
-                Integrity = @{
-                    PayloadSHA256 = $PayloadHash
-                    Algorithm     = "SHA-256"
-                    Scope         = "PayloadJsonCompressed"
-                }
+        $TriageReport = [PSCustomObject]@{
+            Meta      = $Meta
+            Payload   = $Payload
+            Integrity = @{
+                PayloadSHA256 = $PayloadHash
+                Algorithm     = "SHA-256"
+                Scope         = "PayloadJsonCompressed"
             }
+        }
 
-            # Export full report (formatting here does NOT affect the hash)
-            $TriageReport | ConvertTo-Json -Depth 10 | Out-File -Encoding UTF8 "Trig.json"
-
+        [System.IO.File]::WriteAllText(
+        "Trig.json",
+        ($TriageReport | ConvertTo-Json -Depth 100 -Compress),
+        [System.Text.UTF8Encoding]::new($false) # UTF-8, no BOM
+    )
