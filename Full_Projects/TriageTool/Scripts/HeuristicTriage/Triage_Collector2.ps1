@@ -132,8 +132,6 @@
                 Advanced     = $Advanced
             }
 
-        $PayloadJson = $Payload | ConvertTo-Json -Depth 100 -Compress -EscapeHandling None
-
         $TriageReport = [PSCustomObject]@{
             Meta      = $Meta
             Payload   = $Payload
@@ -146,14 +144,11 @@
     )
 
     # Now hash the actual file bytes
-    $FileBytes = [System.IO.File]::ReadAllBytes("Trig.json")
+    $FileHash = Get-FileHash("Trig.json", "SHA256") | Select-Object -ExpandProperty Hash
 
-    $PayloadHash = [Convert]::ToHexString(
-        [System.Security.Cryptography.SHA256]::Create().ComputeHash($FileBytes)
-    )
     # Append data to a hash log python can read for integrity verification
         $HashLog = [PSCustomObject]@{
-            PayloadSHA256 = $PayloadHash
+            PayloadSHA256 = $FileHash
             Algorithm     = "SHA-256"
             Scope         = "PayloadJsonCompressed"
         }

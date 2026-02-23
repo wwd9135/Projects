@@ -4,31 +4,24 @@ import hashlib
 
 
 
-def compute_payload_hash(payload_obj):
-    # debug
- 
-    json_bytes = json.dumps(
-        payload_obj,
-    separators=(",", ":"),
-    ensure_ascii=False, # ← THIS is the missing piece
-    sort_keys=True      # ← THIS is the missing piece
-    ).encode("utf-8")
-    print("PY canonical length:", len(json_bytes))
-    print("PY canonical start :", json_bytes[:100])
-    with open("py.json", "wb") as f:
-        f.write(json_bytes)
+def compute_payload_hash():
+    with open("Trig.json","rb") as f:
+        digest = hashlib.file_digest(f, "sha256")
+    return digest.hexdigest()
 
-    return hashlib.sha256(json_bytes).hexdigest().upper()
 def main():
     # Load the triage file
     with open("Trig_Hash.log", "r", encoding="utf-8-sig") as f:
         data = json.load(f)
-    print("Keys in Trig_Hash.log:", list(data.keys()))
-    data["Payload"] = OrderedDict(sorted(data["PayloadSHA256"].items()))
+    hash =  data["PayloadSHA256"]
+    print("Stored Hash: ", hash)
+    print(f"Python Hash: {compute_payload_hash().upper()}")
+    print(f"{'Match' if hash == compute_payload_hash().upper() else 'No Match'}")
+
 
 
     #stored_hash = 
-#payload = data["Payload"]
+    #payload = data["Payload"]
     #print(payload)
     # Compute hash in Python
     #python_hash = compute_payload_hash(payload)
