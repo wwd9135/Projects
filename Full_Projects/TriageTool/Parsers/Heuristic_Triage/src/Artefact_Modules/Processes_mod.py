@@ -1,5 +1,9 @@
 # Processes artefact parsing for the Triage Tool. This module will handle the orchestration of parsing the various artefact types and compiling the results into a structured format for the LLM agent.
 
+# 1: one goal of detecting strange processes, but many functions will be needed to achieve this, such as:
+
+
+
 class Processes:
     def __init__(self):
         pass
@@ -12,3 +16,5 @@ class Processes:
             "scheduled_tasks": "Parsed scheduled tasks information"
         }
     
+
+

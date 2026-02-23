@@ -59,7 +59,7 @@
             $ConnectionsSummary = @{
                 Total = $Connections.Count
                 StateCounts = $Connections | Group-Object State | ForEach-Object { 
-                    [PSCustomObject]@{State=$_.Name; Count=$_.Count} 
+                    [PSCustomObject]@{Name="State";Expression={$_.State.ToString()}}
                 }
                 UniqueLocalPorts = $Connections | Select-Object -ExpandProperty LocalPort -Unique
             }
