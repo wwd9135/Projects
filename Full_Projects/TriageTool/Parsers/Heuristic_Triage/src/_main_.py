@@ -21,18 +21,21 @@ def compute_payload_hash(payload_obj):
     return hashlib.sha256(json_bytes).hexdigest().upper()
 def main():
     # Load the triage file
-    with open("Trig.json", "r", encoding="utf-8-sig") as f:
+    with open("Trig_Hash.log", "r", encoding="utf-8-sig") as f:
         data = json.load(f)
+    print("Keys in Trig_Hash.log:", list(data.keys()))
+    data["Payload"] = OrderedDict(sorted(data["PayloadSHA256"].items()))
 
-    stored_hash = data["Integrity"]["PayloadSHA256"]
-    payload = data["Payload"]
+
+    #stored_hash = 
+#payload = data["Payload"]
     #print(payload)
     # Compute hash in Python
-    python_hash = compute_payload_hash(payload)
+    #python_hash = compute_payload_hash(payload)
 
-    print("Stored Hash: ", stored_hash)
-    print("Python Hash: ", python_hash)
-    print("Match:       ", stored_hash == python_hash)
+    #print("Stored Hash: ", stored_hash)
+    #print("Python Hash: ", python_hash)
+    #print("Match:       ", stored_hash == python_hash)
 
 
 
