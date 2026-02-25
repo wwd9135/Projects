@@ -1,13 +1,36 @@
 import json
 
-
+#Paths under Users, Temp, ProgramData
+#Processes: powershell.exe, mshta.exe, rundll32.exe
+#Broad extensions: .dll, .exe#
+#🟠 Medium Risk
+#IP exclusions (almost never legitimate)
+#TemporaryPaths enabled
+#Custom-named binaries
 # 1: defender exclusions
 class defender_exclusions:
-    def __init__(self):
-        pass
-    def parse(self,data):
-        pass
+    def parse(self, data):
+        # data is a LIST of dicts
+        results = []
+        for entry in data:
+            if entry.get("Value") is None:
+                return {
+                    "present": False,
+                    "note": entry.get("Note")
+                }
 
+            results.append({
+                "category": entry.get("Category"),
+                "value": entry.get("Value"),
+                "registry_path": entry.get("RegistryPath")
+            })
+        else:
+            s= "pass"
+            # Insert parsing logic.
+        return {
+            "present": True,
+            "exclusions": results
+        }
 # 2: WMI subscription check
 class wmi_subscriptions:
     def __init__(self):
@@ -24,16 +47,16 @@ class prefetch_checker:
 
 class Advanced_Run:
     def __init__(self, data):
-        self.data = data   # <-- this is already the Advanced dict
+        self.data = data  
 
     def run(self):
         defender:object = defender_exclusions()
         wmi:object = wmi_subscriptions()
         prefetch:object = prefetch_checker()
 
-        defender_data : dict = defender.parse(self.data.get("DefenderExclusions", []))
-        wmi_data : dict = wmi.parse(self.data.get("WmiSubscriptions", []))
-        prefetch_data : dict = prefetch.parse(self.data.get("Prefetch", []))
+        defender_data : list = defender.parse(self.data.get("DefenderExclusions", []))
+        wmi_data : list = wmi.parse(self.data.get("WmiSubscriptions", []))
+        prefetch_data : list = prefetch.parse(self.data.get("Prefetch", []))
 
         advanced_report : dict = {
             "DefenderExclusions": defender_data,
