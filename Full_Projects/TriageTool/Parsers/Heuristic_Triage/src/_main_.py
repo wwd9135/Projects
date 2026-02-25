@@ -30,7 +30,7 @@ def main():
     # Example of accessing the Advanced artefacts data
     with open("Trig.json", "r", encoding="utf-8-sig") as f:
         data = json.load(f)
-    print(f"Advanced Artefacts: {data['Payload']['Advanced']}")
+    #print(f"Advanced Artefacts: {data['Payload']['Advanced']}")
 
 if __name__ == "__main__":
     main()
