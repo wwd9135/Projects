@@ -4,10 +4,10 @@
 
 
 
-class Processes:
-    def __init__(self):
-        pass
-    def parse(self, data):
+class Processes_run:
+    def __init__(self, data):
+        self.data = data
+    def parse(self):
         # Placeholder for parsing logic
         # This should include the actual parsing of the processes artefacts from the data
         return {

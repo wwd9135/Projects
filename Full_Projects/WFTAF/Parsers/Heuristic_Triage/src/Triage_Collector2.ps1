@@ -138,7 +138,7 @@
         }
 
         [System.IO.File]::WriteAllText(
-        "Trig.json",
+        "\Output_folder\Trig.json",
         ($TriageReport | ConvertTo-Json -Depth 100 -Compress),
         [System.Text.UTF8Encoding]::new($false) # UTF-8, no BOM
     )
@@ -153,7 +153,7 @@
             Scope         = "PayloadJsonCompressed"
         }
     [System.IO.File]::WriteAllText(
-            "Trig_Hash.log",
+            "\Output_folder\Trig_Hash.log",
             ($HashLog | ConvertTo-Json -Depth 100 -Compress),
             [System.Text.UTF8Encoding]::new($false) # UTF-8, no BOM
         )

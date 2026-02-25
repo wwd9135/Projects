@@ -1,5 +1,6 @@
 import json
 
+
 # 1: defender exclusions
 class defender_exclusions:
     def __init__(self):
@@ -22,26 +23,26 @@ class prefetch_checker:
 
 
 class Advanced_Run:
-    def __init__(self):
-        pass
-    def Run(self,data):
-        # Run each of the advanced artefact checks and compile the data into a format that can be easily added to the final report.
-        defender = defender_exclusions()
-        wmi = wmi_subscriptions()
-        prefetch = prefetch_checker()
+    def __init__(self, data):
+        self.data = data   # <-- this is already the Advanced dict
 
-        defender_data = defender.parse(data)
-        wmi_data = wmi.parse(data)
-        prefetch_data = prefetch.parse(data)
+    def run(self):
+        defender:object = defender_exclusions()
+        wmi:object = wmi_subscriptions()
+        prefetch:object = prefetch_checker()
 
-        # Compile the data into a structured format for the final report.
-        # Format data in classes not the main report, so that the data can be easily accessed and formatted in the final report.
-        advanced_report = {
+        defender_data : dict = defender.parse(self.data.get("DefenderExclusions", []))
+        wmi_data : dict = wmi.parse(self.data.get("WmiSubscriptions", []))
+        prefetch_data : dict = prefetch.parse(self.data.get("Prefetch", []))
+
+        advanced_report : dict = {
             "DefenderExclusions": defender_data,
             "WmiSubscriptions": wmi_data,
             "PrefetchData": prefetch_data
         }
+
         return advanced_report
+
     
 
 #<

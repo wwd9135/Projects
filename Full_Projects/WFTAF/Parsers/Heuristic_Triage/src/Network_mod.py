@@ -6,11 +6,11 @@
 # 1: port checker
 # 2: DNS cache parser
 # 3: network connections parser/ network interfaces parser
-class networks:
-    def __init__(self):
-        pass
+class Network_run:
+    def __init__(self,data):
+        self.data = data
 
-    def parse(self, data):
+    def parse(self):
         # Placeholder for parsing logic
         # This should include the actual parsing of the network artefacts from the data
         return {
