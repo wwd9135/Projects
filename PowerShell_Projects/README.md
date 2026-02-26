@@ -14,7 +14,7 @@ This repository contains a collection of **Enterprise Administration & Security 
 
 ### [Dell-Driver-Packaging](./DCU_packaging/)
 * **Focus:** Automated hardware lifecycle management.
-* **Implementation:** A comprehensive package using **PSADT4** deployable via Microsoft Intune. 
+* **Implementation:** A comprehensive package using **PSADT4** deployable via Microsoft Intune.,
 * **Outcome:** Facilitates automated driver updates with integrated user-facing popups to manage reboots and installation status.
 
 ### [MBAM-Replacement](./MBAM_replacement/)
