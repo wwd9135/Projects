@@ -1,16 +1,15 @@
 import json
 
-#Paths under Users, Temp, ProgramData
-#Processes: powershell.exe, mshta.exe, rundll32.exe
-#Broad extensions: .dll, .exe#
-#🟠 Medium Risk
-#IP exclusions (almost never legitimate)
-#TemporaryPaths enabled
-#Custom-named binaries
+# Paths under Users, Temp, ProgramData
+# Processes: powershell.exe, mshta.exe, rundll32.exe
+# Broad extensions: .dll, .exe
+# 🟠 Medium Risk
+# IP exclusions (almost never legitimate)
+# TemporaryPaths enabled
+# Custom-named binaries
 # 1: defender exclusions
 class defender_exclusions:
     def parse(self, data):
-        # data is a LIST of dicts
         results = []
         for entry in data:
             if entry.get("Value") is None:
@@ -25,8 +24,9 @@ class defender_exclusions:
                 "registry_path": entry.get("RegistryPath")
             })
         else:
-            s= "pass"
+            s = "pass"
             # Insert parsing logic.
+            # Figure out what a real entry would look like to decide how to filter against it
         return {
             "present": True,
             "exclusions": results
@@ -69,21 +69,56 @@ class Advanced_Run:
     
 
 #<
-# PowerShell foresnic commands for reference.
-#  # --- Advanced Forensics ---
-#            try {
-#                $Prefetch = @($(Get-ChildItem C:\Windows\Prefetch\ | Select-Object Name, CreationTime, LastWriteTime))
-#            } catch { $Prefetch = @() }
-#            try {
-#                $WmiSubscriptions = @($(Get-WmiObject -Namespace root\subscription -Class __FilterToConsumerBinding | Select-Object Filter, Consumer))
-#            } catch { $WmiSubscriptions = @() }
+# =========================
+# Advanced Forensics
+# =========================
+#try {
+#    $Prefetch = @(Get-ChildItem C:\Windows\Prefetch |
+#        Select-Object Name, CreationTime, LastWriteTime)
+#} catch { $Prefetch=@() }
 #
-#            try {
-#                $DefenderExclusions = @($(Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\Windows Defender\Exclusions' | Select-Object Name))
-#            } catch { $DefenderExclusions = @() }
+#try {
+   # $WmiSubscriptions = @(Get-WmiObject -Namespace root\subscription `
+  #      -Class __FilterToConsumerBinding |
+ #       Select-Object Filter, Consumer)
+#}# catch { $WmiSubscriptions=@() }
+
+# Defender Exclusions
+#$ExclusionRoot = "HKLM:\SOFTWARE\Microsoft\Windows Defender\Exclusions"
+
+#$DefenderExclusions = @()
+
+#foreach ($Category in Get-ChildItem $ExclusionRoot -ErrorAction SilentlyContinue) {
+  #  try {
+#        $Key = Get-Item $Category.PSPat#h
+ #       $ValueNames = $Key.GetValueNames()#
+
+    #    foreach ($Value in $ValueNames) {
+    #        $DefenderExclusions += [PSCustomObject]@{
+    ##            Category     = $Category.PSChildName
+   #             Value        = $Value
+  #              RegistryPath = $Category.PSPath
+ #           }
+ ###       }
+ #   } catch {
+#        continue
+#    }
+#}
+
+# --- Explicit NULL marker if no exclusions exist ---
+#if (-not $DefenderExclusions -or $DefenderExclusions.Count -eq 0) {
+#    $DefenderExclusions = @(
+#        [PSCustomObject]@{
+#            Category     = "NONE"
+#            Value        = $null
+#            RegistryPath = $ExclusionRoot
+#            Note         = "No Defender exclusions present"
+#        }
+#    )
+#}
 #
-#            $Advanced = [PSCustomObject]@{
-#                Prefetch          = $Prefetch
-#                WmiSubscriptions  = $WmiSubscriptions
-#                DefenderExclusions = $DefenderExclusions
-#            }>#
+#$Advanced = [PSCustomObject]@{
+#    Prefetch           = $Prefetch
+#    WmiSubscriptions   = $WmiSubscriptions
+#    DefenderExclusions = $DefenderExclusions
+#}
