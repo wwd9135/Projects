@@ -1,6 +1,6 @@
 # Project-Portfolio: Systems & Security Engineering
 
-This repository serves as a central hub for my technical work, ranging from fundamental logic exercises to production-ready enterprise frameworks. 
+This repository serves as a central hub for my technical work, ranging from fundamental logic exercises to production-ready enterprise frameworks.
 
 ## Repository Navigation
 
