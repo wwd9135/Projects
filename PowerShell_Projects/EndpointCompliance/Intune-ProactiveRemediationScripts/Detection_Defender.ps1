@@ -1,48 +1,121 @@
-# Defender agent for endpoint health checker. Focuses on validating the engine is alive, has up to date signatures, and is receiving policies from Intune. 
-# Designed to be used in a Proactive Remediation script in intune.
-$Issues = @()
+﻿# TODO@
+# Review the data coming from each check to ensure its doing what I expect
+# Focus on remediations if all is well?
+#
+
+
+
+<#
+.SYNOPSIS
+    Defender Health & Execution Detection Script for Intune Proactive Remediations
+.DESCRIPTION
+    Checks Core Service Health, MDE Onboarding, MAPS Connectivity, Signature Age, 
+    and critical protection states. 
+    Returns Exit 1 if unhealthy (triggers remediation) or Exit 0 if healthy.
+#>
 
 try {
-    $Prefs = Get-MpPreference -ErrorAction Stop
-    $Status = Get-MpComputerStatus -ErrorAction Stop
-} catch {
-    Write-Output "Non-Compliant: Defender Engine is unreachable or crashed."
-    exit 1
-}
+    $Issues = @()
 
-# 1. Dynamic ASR Audit
-# Checking engine has any rules loaded- Designed to pick up intune ID's will flag if there isnt a complete ID: eg. 01443614-cd74-433a-b99e-2ecdc07bfc25 is compliant, but null/ no value set would flag as non compliant.
-$ASRRules = "014436"
-if ($null -eq $ASRRules -or $ASRRules.Length -lt 10) {
-    $Issues += "ASR Engine is empty (No policies applied)"
+    # 1. Service Status
+    $defService = Get-Service -Name "WinDefend" -ErrorAction SilentlyContinue
+    if (-not $defService -or $defService.Status -ne 'Running') { 
+        $Issues += "Service Stopped/Missing" 
+    }
+
+    # 2. Onboarding Status (Registry)
+    $OnboardPath = "HKLM:\SOFTWARE\Microsoft\Windows Advanced Threat Protection\Status"
+    $Onboard = (Get-ItemProperty -Path $OnboardPath -ErrorAction SilentlyContinue).OnboardingState
+    if ($Onboard -ne 1) { 
+        $Issues += "Not Onboarded" 
+    }
+
+    # 3. MAPS connectivity
+    $MpCmdRun = "$Env:ProgramFiles\Windows Defender\MpCmdRun.exe"
+
+    # Ensure binary exists (Intune-safe)
+    if (-not (Test-Path $MpCmdRun)) {
+        $Issues += "FAIL: MpCmdRun not found"
+    } else {
+        # Run once, capture output + exit code
+        $Output = & $MpCmdRun -ValidateMapsConnection 2>&1
+        $ExitCode = $LASTEXITCODE
+
+        # Detection logic (fail-safe)
+        if ($ExitCode -eq 0 -and $Output -match 'successfully established a connection') {
+            # PASS: We do nothing here so the script continues to the next check.
+        }
+        else {
+            # FAIL: We add it to the issues array. 
+            # Note: Intune outputs are best kept to a single line, so we combine your output here.
+            $Issues += "FAIL: MAPS connectivity failed (ExitCode=$ExitCode)"
+        }
+    }
+
+    # Attempt to pull Defender stats. Wrapped in a try/catch because if the 
+    # engine is corrupted, these cmdlets will throw terminating errors.
+    try {
+        $MPStat = Get-MpComputerStatus -ErrorAction Stop
+        $MPPref = Get-MpPreference -ErrorAction Stop
+
+        # 4. Signature Age (Max 3 days)
+        if ($MPStat.AntivirusSignatureAge -gt 3) { 
+            $Issues += "Stale Signatures ($($MPStat.AntivirusSignatureAge) days)" 
+        }
+
+        # 5. Platform & Engine Versions (Cast as [version] to ensure accurate math comparison)
+        [version]$MinPlatform = '4.18.2001.10'
+        [version]$MinEngine   = '1.1.26010.1'
+        
+        if ($MPStat.AMServiceVersion -as [version] -and [version]$MPStat.AMServiceVersion -lt $MinPlatform) { 
+            $Issues += "Old Platform ($($MPStat.AMServiceVersion))" 
+        }
+        if ($MPStat.AMProductVersion -as [version] -and [version]$MPStat.AMProductVersion -lt $MinEngine) { 
+            $Issues += "Old Engine ($($MPStat.AMProductVersion))" 
+        }
+
+        # 6. Running Mode
+        if ($MPStat.AMRunningMode -ne 'Normal') { 
+            $Issues += "Mode: $($MPStat.AMRunningMode)" 
+        }
+
+        # 7. RTP, PUA, and Network Protection
+        if ($MPStat.RealTimeProtectionEnabled -ne $true) { $Issues += "RTP Disabled" }
+        if ($MPPref.PUAProtection -ne 1) { $Issues += "PUA Disabled" }
+        if ($MPPref.EnableNetworkProtection -ne 1) { $Issues += "NetworkProt Disabled" }
+
+        # 8. Device Control State & Policy Age
+        $MaxAge = New-TimeSpan -Days 14
+        if ($MPStat.DeviceControlState -notin @('Enabled','RebootRequired')) { 
+            $Issues += "DC Disabled" 
+        }
+        
+        # Ensure DeviceControlPoliciesLastUpdated has a value before calculating timespan
+        if ($MPStat.DeviceControlPoliciesLastUpdated) {
+            $timeSinceUpdate = (Get-Date) - $MPStat.DeviceControlPoliciesLastUpdated
+            if ($timeSinceUpdate -gt $MaxAge) { 
+                $Issues += "Either no update/ event triggered in 14 days (False positive), or the DC is stale" 
+            }
+        } else {
+            $Issues += "DC Policy Never Updated"
+        }
+
+    } catch {
+        $Issues += "Get-MpComputerStatus failed (Engine likely degraded)"
+    }
     
-}
+    # Reporting Logic
+    if ($Issues.Count -gt 0) {
+        # Join with a pipe for easier reading in the Intune portal
+        Write-Output "Non-Compliant: $($Issues -join ' | ')"
+        Write-Host 1
+    } else {
+        Write-Output "Compliant: Core Health OK"
+        Write-Host 0
+    }
 
-# 2. Dynamic Device Control (USB) Audit
-# We check the engine's internal timestamp for when it last parsed a USB policy.
-$DCPolicyAge = $Status.DeviceControlPoliciesLastUpdated
-if ($null -eq $DCPolicyAge) {
-    $Issues += "Device Control Policy never received"
-} elseif ($DCPolicyAge -lt (Get-Date).AddDays(-14)) {
-    # Flags if Intune hasn't updated the USB rules in 2 weeks
-    $Issues += "Device Control Policy stale (Last updated: $($DCPolicyAge.ToString('yyyy-MM-dd')))"
-}
-
-# 3. Cloud Protection Handshake
-# Validates the device is talking to Microsoft's cloud brains
-if ($Prefs.MAPSReporting -eq 0) {
-    $Issues += "Cloud Protection / MAPS is disabled"
-}
-
-# 4. Core Survival Audit
-if ($Status.RealTimeProtectionEnabled -ne $true) { $Issues += "RTP is offline" }
-if ($Status.AntivirusSignatureAge -gt 3) { $Issues += "Signatures out of date ($($Status.AntivirusSignatureAge) days)" }
-
-# Final Result
-if ($Issues.Count -gt 0) {
-    Write-Output "Non-Compliant: $($Issues -join ' | ')"
+} catch {
+    # Catch-all for catastrophic script failures
+    Write-Output "Non-Compliant: Script Error - $($_.Exception.Message)"
     write-host 1
 }
-
-Write-Output "Compliant: Defender Engine is dynamically populated and healthy."
-write-host 0
