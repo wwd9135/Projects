@@ -10,6 +10,6 @@ Set-Service windefend -StartupType Automatic -Status Running
 
 # 3. Note: Figure out how we can re-onboard the device.
 
-# For now, we report it.
+# For now log it only.
 
 Write-Output "Remediation attempted: Service started and Updates triggered."

@@ -1,6 +1,6 @@
-﻿# TODO@
+﻿# TODO
 # Review the data coming from each check to ensure its doing what I expect
-# Focus on remediations if all is well?
+# Focus on building out remediations to match the detection script
 #
 
 
