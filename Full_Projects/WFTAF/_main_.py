@@ -14,7 +14,7 @@ def main():
     hash: str =  data["PayloadSHA256"]
     print(f"Stored Hash: {hash}")
     try:
-        computed_hash: str = compute_payload_hash().upper()
+        computed_hash: str = compute_payload_hash().upper():
         print(f"Python Hash: {computed_hash}")
         print(f"{'Match' if hash == computed_hash else 'No Match'}")
     except Exception as e:
