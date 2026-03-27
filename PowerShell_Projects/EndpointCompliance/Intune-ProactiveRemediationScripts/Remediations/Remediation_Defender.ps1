@@ -12,8 +12,6 @@
     }
 
     # 3. Force an Intune MDM sync using the documented enrollment client task
-    $SyncTriggered = $false
-
     try {
         $task = Get-ScheduledTask -ErrorAction SilentlyContinue |
             Where-Object {
@@ -24,6 +22,7 @@
 
         if ($task) {
             Start-ScheduledTask -InputObject $task -ErrorAction Stop
+            # Redo this one. Need to do an exit code instead.
             $SyncTriggered = $true
         }
     }
