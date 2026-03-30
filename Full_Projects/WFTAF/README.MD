@@ -40,7 +40,7 @@ Triage_Collector.ps1
 
 This generates a Triage_[ComputerName].json file containing the system state.
 
-### 2. Analysis & Reporting
+### 2. Analysis & reporting
 Pass the generated JSON to the Python parser to identify IOCs:
 
 # Navigate to the Parsers folder
