@@ -18,7 +18,7 @@ def main():
         print(f"Python Hash: {computed_hash}")
         print(f"{'Match' if hash == computed_hash else 'No Match'}")
     except Exception as e:
-        print(f"Error computing hash: {e}")
+        print(f"Error computing hash: {e}") # 
 
     # Example of accessing the Advanced artefacts data
     with open(r"src\Output_folder\Trig.json", "r", encoding="utf-8-sig") as f:
