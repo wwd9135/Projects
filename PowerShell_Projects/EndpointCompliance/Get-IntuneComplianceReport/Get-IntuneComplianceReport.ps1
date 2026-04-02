@@ -1,99 +1,139 @@
-<#
-.SYNOPSIS
-    Generates a compliance report for a specific list of Intune-managed devices.
-.DESCRIPTION
-    This script imports a list of device names from a text file, queries Microsoft Graph 
-    for their current compliance state, OS, and primary user, and exports the data to CSV.
-.PARAMETER ListPath
-    The path to the .txt file containing device names (one per line). Defaults to ListLaptops.txt.
-.NOTES
-    Author: William Richardson
-    Date: 03/02/2026
-    Required Permissions: DeviceManagementManagedDevices.Read.All
-#>
+# Get-AdvancedComplianceReport.ps1
 
-# Configuration
-$ReportPath = "C:\Temp"
-$InputFile  = "ListLaptops.txt"
-$ErrorActionPreference = "Stop"
+function Get-AdvancedComplianceReport {
 
-# --- Environment Validation ---
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateScript({ Test-Path $_ -PathType Leaf })]
+        [string]$HostnameFile,
 
-# Ensure Report Directory exists
-if (!(Test-Path -Path $ReportPath)) {
-    Write-Host "[!] Error: Report path '$ReportPath' not found. Please create it or adjust the script." -ForegroundColor Red
-    return
-}
+        [string]$OutputPath = "ComplianceReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv",
 
-# Verify Microsoft Graph Module
-if (!(Get-Module -ListAvailable Microsoft.Graph)) {
-    Write-Host "[!] Error: Microsoft.Graph module is missing." -ForegroundColor Red
-    Write-Host "[i] Run: Install-Module Microsoft.Graph -Scope CurrentUser" -ForegroundColor Cyan
-    return
-}
+        [ValidateSet("CSV", "JSON", "HTML")]
+        [string]$Format = "CSV"
+    )
 
-# Verify Input File
-if (!(Test-Path -Path $InputFile)) {
-    Write-Host "[!] Error: Input file '$InputFile' not found in script directory." -ForegroundColor Red
-    return
-}
+    $ErrorActionPreference = "SilentlyContinue"
+    $ComplianceResults = @()
 
-# --- Execution ---
-try {
-    # Connect with specific scope for Managed Devices
-    Connect-MgGraph -Scopes "DeviceManagementManagedDevices.Read.All" -NoWelcome
+    # --- LOAD HOSTNAMES ---
+    $Hostnames = Get-Content -Path $HostnameFile |
+        Where-Object { $_ -match '\S' } |   # Drop blank lines
+        ForEach-Object { $_.Trim().ToUpper() }
 
-    $deviceNames = Get-Content -Path $InputFile | Where-Object { ![string]::IsNullOrWhiteSpace($_) }
-    Write-Host "[*] Loaded $($deviceNames.Count) device names for processing.`n" -ForegroundColor Cyan
+    if ($Hostnames.Count -eq 0) {
+        Write-Warning "No hostnames found in '$HostnameFile'. Exiting."
+        return
+    }
 
-    $Results  = @()
-    $NotFound = @()
+    # --- MODULE & GRAPH CONNECTION ---
+    try {
+        if (-not (Get-Module -ListAvailable -Name Microsoft.Graph)) {
+            Install-Module Microsoft.Graph -Scope CurrentUser -Force -ErrorAction SilentlyContinue
+        }
 
-    foreach ($name in $deviceNames) {
-        $currentName = $name.Trim()
-        Write-Host "Checking: $currentName..." -ForegroundColor Gray
+        Import-Module Microsoft.Graph.Authentication -ErrorAction SilentlyContinue
+        Import-Module Microsoft.Graph.DeviceManagement -ErrorAction SilentlyContinue
 
+        $Scopes = @(
+            "DeviceManagementManagedDevices.Read.All",
+            "DeviceManagementConfiguration.Read.All",
+            "Directory.Read.All"
+        )
+
+        Connect-MgGraph -Scopes $Scopes -NoWelcome -ErrorAction Stop
+    }
+    catch {
+        Write-Warning "Failed to connect to Microsoft Graph. Exiting."
+        return
+    }
+
+    # --- QUERY EACH HOSTNAME INDIVIDUALLY ---
+    foreach ($Hostname in $Hostnames) {
+
+        # Use OData $filter to query server-side — avoids pulling all devices
+        $Device = Get-MgDeviceManagementManagedDevice `
+            -Filter "deviceName eq '$Hostname'" `
+            -ErrorAction SilentlyContinue |
+            Select-Object -First 1   # Guard against duplicate device names
+
+        # Not found in Intune — skip silently
+        if (-not $Device) { continue }
+
+        # --- COMPLIANCE & CONFIGURATION STATE ---
         try {
-            # Query Graph via Filter (Best practice for performance)
-            $device = Get-MgDeviceManagementManagedDevice -Filter "deviceName eq '$currentName'" `
-                      -Property "id,deviceName,userPrincipalName,operatingSystem,complianceState"
+            $ComplianceStatus = Get-MgDeviceManagementManagedDeviceDeviceCompliancePolicyState `
+                -ManagedDeviceId $Device.Id `
+                -ErrorAction SilentlyContinue
 
-            if (-not $device) {
-                Write-Host "  [-] Device not found in Intune." -ForegroundColor Yellow
-                $NotFound += $currentName
-                continue
-            }
-
-            foreach ($d in $device) {
-                $Results += [PSCustomObject]@{
-                    DeviceName        = $d.DeviceName
-                    UserPrincipalName = $d.UserPrincipalName
-                    OperatingSystem   = $d.OperatingSystem
-                    ComplianceState   = $d.ComplianceState
-                    ManagedDeviceId   = $d.Id
-                    AuditDate         = Get-Date -Format "yyyy-MM-dd HH:mm"
-                }
-            }
+            $ConfigurationStatus = Get-MgDeviceManagementManagedDeviceDeviceConfigurationState `
+                -ManagedDeviceId $Device.Id `
+                -ErrorAction SilentlyContinue
         }
         catch {
-            Write-Host "  [!] Error querying $currentName : $($_.Exception.Message)" -ForegroundColor Red
+            $ComplianceStatus    = @()
+            $ConfigurationStatus = @()
+        }
+
+        $ComplianceResults += [PSCustomObject]@{
+            DeviceName                 = $Device.DeviceName
+            DeviceId                   = $Device.Id
+            UserPrincipalName          = $Device.UserPrincipalName
+            Platform                   = $Device.OperatingSystem
+            OSVersion                  = $Device.OsVersion
+            ComplianceState            = $Device.ComplianceState
+            LastSyncDateTime           = $Device.LastSyncDateTime
+            EnrollmentDateTime         = $Device.EnrolledDateTime
+            ManagementAgent            = $Device.ManagementAgent
+            DeviceType                 = $Device.DeviceType
+            Manufacturer               = $Device.Manufacturer
+            Model                      = $Device.Model
+            SerialNumber               = $Device.SerialNumber
+            TotalStorageSpaceInBytes   = $Device.TotalStorageSpaceInBytes
+            FreeStorageSpaceInBytes    = $Device.FreeStorageSpaceInBytes
+            CompliancePoliciesCount    = ($ComplianceStatus    | Measure-Object).Count
+            ConfigurationPoliciesCount = ($ConfigurationStatus | Measure-Object).Count
+            IsEncrypted                = $Device.IsEncrypted
+            IsSupervised               = $Device.IsSupervised
+            ExchangeAccessState        = $Device.ExchangeAccessState
+            ExchangeAccessStateReason  = $Device.ExchangeAccessStateReason
         }
     }
-    # --- Export Results ---
-    if ($Results.Count -gt 0) {
-        $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-        $csvPath   = Join-Path $ReportPath "IntuneComplianceReport_$timestamp.csv"
 
-        $Results | Sort-Object DeviceName | Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
-        Write-Host "`n[+] Success: Results exported to $csvPath" -ForegroundColor Green
+    # --- OUTPUT ---
+    if ($ComplianceResults.Count -eq 0) {
+        Write-Warning "No matching devices found in Intune."
     }
     else {
-        Write-Host "`n[!] No data found for the provided list." -ForegroundColor Yellow
+        try {
+            switch ($Format) {
+                "CSV" {
+                    $ComplianceResults | Export-Csv -Path $OutputPath -NoTypeInformation -Force
+                }
+                "JSON" {
+                    $ComplianceResults | ConvertTo-Json -Depth 4 |
+                        Out-File -FilePath $OutputPath -Encoding UTF8 -Force
+                }
+                "HTML" {
+                    $ComplianceResults | ConvertTo-Html -Title "Advanced Compliance Report" `
+                        -Head "<style>table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px}th{background:#f2f2f2}</style>" |
+                        Out-File -FilePath $OutputPath -Encoding UTF8 -Force
+                }
+            }
+            Write-Host "Report saved to: $OutputPath"
+        }
+        catch {
+            Write-Warning "Failed to write output file."
+        }
     }
+
+    # --- CLEANUP ---
+    try { Disconnect-MgGraph -ErrorAction SilentlyContinue } catch {}
+
+    return $ComplianceResults
 }
-catch {
-    Write-Host "`n[!] Critical Script Error: $($_.Exception.Message)" -ForegroundColor Red
-}
-finally {
-    # Optional: Disconnect-MgGraph
-}
+Get-AdvancedComplianceReport -HostnameFile Test.csv -Format CSV -OutputPath "C:\report.csv"
+# Example usage:
+# Get-AdvancedComplianceReport -HostnameFile "C:\hostnames.txt"
+# Get-AdvancedComplianceReport -HostnameFile "C:\hostnames.txt" -Format HTML -OutputPath "C:\report.html"
