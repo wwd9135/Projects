@@ -8,17 +8,17 @@ def compute_payload_hash():
     return digest.hexdigest()
 
 def main():
-    # Load the hash file
+    # Load the hash file for scanning
     with open(r"src\Output_folder\Trig_Hash.log", "r", encoding="utf-8-sig") as f:
         data: str = json.load(f)
     hash: str =  data["PayloadSHA256"]
     print(f"Stored Hash: {hash}")
     try:
-        computed_hash: str = compute_payload_hash().upper():
+        computed_hash: str = compute_payload_hash().upper()
         print(f"Python Hash: {computed_hash}")
         print(f"{'Match' if hash == computed_hash else 'No Match'}")
     except Exception as e:
-        print(f"Error computing hash: {e}") # 
+        print(f"Error computing hash: {e}") # #
 
     # Example of accessing the Advanced artefacts data
     with open(r"src\Output_folder\Trig.json", "r", encoding="utf-8-sig") as f:

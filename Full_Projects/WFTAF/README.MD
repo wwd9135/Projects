@@ -3,7 +3,7 @@
 ## 🚀 Overview
 **Status: Active Development (Phase 1: Collection & Normalization)**
 
-This project is a modular Digital Forensics and Incident Response (DFIR) framework designed for rapid triage of Windows endpoints. By leveraging high-performance PowerShell data acquisition and Python-based heuristic analysis, this tool transforms raw system telemetry into actionable intelligence.
+This project is a modular Digital Forensics and Incident Response (DFIR) framework designed for rapid triage of Windows endpoints. By leveraging high-performance PowerShell data acquisition and Python-based heuristic analysis, this tool transforms raw system telemetry into actionable intelligence for analysts.
 
 The framework is built on a **Pipeline Architecture**:
 1. **Acquisition:** PowerShell scripts collect live system state (Persistence, Network, Processes).
