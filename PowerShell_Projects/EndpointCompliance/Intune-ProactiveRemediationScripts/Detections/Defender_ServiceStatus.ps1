@@ -1,8 +1,14 @@
-# 1. Service Status
 $defService = Get-Service -Name "WinDefend" -ErrorAction SilentlyContinue
-if (-not $defService -or $defService.Status -ne 'Running') {
-    # "WinDefend Service Stopped/Missing"
-} else {
-    exit 0 # COMPLIANT: Tells Intune everything is fine
+
+if ($null -eq $defService) {
+    Write-Output "WinDefend service missing"
+    exit 1
 }
-exit 1 # CRITICAL: Triggers the Remediation script
+
+if ($defService.Status -ne 'Running') {
+    Write-Output "WinDefend service not running"
+    exit 1
+}
+
+Write-Output "WinDefend service running"
+exit 0
