@@ -44,14 +44,14 @@ WFTAF addresses this by decoupling **data collection**, **normalisation**, and *
          │
          ▼
 ┌─────────────────────┐
-│  Sigma Match Engine  │  Python engine ingests .yml Sigma rules and executes
+│  Sigma Match Engine │  Python engine ingests .yml Sigma rules and executes
 │  (Python/YAML)      │  detection logic against normalised JSON output
 └────────┬────────────┘
          │
          ▼
 ┌─────────────────────┐
-│  Validation          │  Atomic Red Team simulations verify detection recall
-│  (Atomic Red Team)  │  and benchmark false-positive rates per TTP
+│  Validation         │  Atomic Red Team/ Custom built simulations verify detection recall
+│  (ART/Custom tests) │  and benchmark false-positive rates per TTP
 └─────────────────────┘
 ```
 
