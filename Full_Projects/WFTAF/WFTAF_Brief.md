@@ -106,8 +106,7 @@ Each technique maps to one or more Sigma rules in `/rules` and a corresponding A
 - [x] **Phase 1** — Modular PowerShell collectors for core persistence artefacts
 - [ ] **Phase 2** — Python normalisation layer with full OSSEM/Sigma field mapping
 - [ ] **Phase 3** — Sigma match engine — ingest and execute YAML rule logic against normalised output
-- [ ] **Phase 4** — Atomic Red Team validation suite — recall benchmarking per TTP
-- [ ] **Phase 5** — Cross-platform expansion — AWS CloudTrail telemetry mapping and rule portability
+- [ ] **Phase 4** — Validate findings, produce a report for quicker analysis.
 
 ---
 
