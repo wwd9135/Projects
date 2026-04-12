@@ -4,5 +4,8 @@
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
-    "python-envs.defaultEnvManager": "ms-python.python:system"
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python.analysis.extraPaths": [
+        "c:\\Users\\theri\\.vscode\\extensions\\ms-security.ms-sentinel-2.0.2\\python"
+    ]
 }
