@@ -1,0 +1,4 @@
+SigninLogs
+| where RiskState == "atRisk" or RiskLevelDuringSignIn != "none"
+| project TimeGenerated, UserPrincipalName, Location, RiskLevelDuringSignIn, RiskState
+| sort by TimeGenerated desc
