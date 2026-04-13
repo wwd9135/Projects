@@ -1,0 +1,38 @@
+SecurityAlert
+| where TimeGenerated > ago(7d)
+| summarize AlertCount = count() by AlertName, AlertSeverity
+| sort by AlertCount desc
+
+# Suspicious PS commands- Encoded values in command.
+DeviceProcessEvents
+| where FileName == "powershell.exe"
+| where ProcessCommandLine has_any ("-EncodedCommand", "-enc", "-e ")
+| project TimeGenerated, DeviceName, AccountName, ProcessCommandLine
+| sort by TimeGenerated desc
+
+# Account creation
+AuditLogs
+| where TimeGenerated > ago(30d)
+| where OperationName contains "Adding new user"
+| project TimeGenerated, Category, OperationName, Result, ResultDescription
+| sort by TimeGenerated desc
+
+# Incident status count.
+SecurityIncident
+| where Status != "Closed"
+| summarize Count = count() by Severity
+| sort by Count desc
+
+# Network connection to metasploit
+DeviceNetworkEvents
+| where TimeGenerated > ago(1h)
+| where RemotePort == 4444
+| project TimeGenerated, DeviceName, RemoteIP, RemotePort, InitiatingProcessFileName
+| sort by TimeGenerated desc
+
+# Dodgy 365 productivity
+AzureActivity
+| where TimeGenerated > ago(7d)
+| where OperationNameValue contains "delete"
+| where ActivityStatusValue == "Success"
+| project Caller, CallerIpAddress,  Level, TimeGenerated, Resource, ResourceGroup # 
