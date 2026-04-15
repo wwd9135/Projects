@@ -23,7 +23,7 @@ SecurityIncident
 | summarize Count = count() by Severity
 | sort by Count desc
 
-# Network connection to metasploit.
+# Network connection to metasploit..
 DeviceNetworkEvents
 | where TimeGenerated > ago(1h)
 | where RemotePort == 4444
