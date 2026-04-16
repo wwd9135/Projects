@@ -23,7 +23,7 @@ SecurityIncident
 | summarize Count = count() by Severity
 | sort by Count desc
 
-# Network connection to metasploit..
+# Network connection to metasploit...
 DeviceNetworkEvents
 | where TimeGenerated > ago(1h)
 | where RemotePort == 4444
@@ -36,3 +36,16 @@ AzureActivity
 | where OperationNameValue contains "delete"
 | where ActivityStatusValue == "Success"
 | project Caller, CallerIpAddress,  Level, TimeGenerated, Resource, ResourceGroup # 
+
+# New user outside of 9-5
+AuditLogs
+| where TimeGenerated > ago(30d)
+| where datetime_part("hour", TimeGenerated) !between (9 .. 17)
+| where OperationName contains "Add user"
+| project TimeGenerated, Identity, OperationName, Result
+
+# Brute force detection (5 attempts to different accounts from same IP in an hour)
+SigninLogs
+| summarize AccountsAttempted = dcount(UserPrincipalName) 
+    by IPAddress, bin(TimeGenerated, 1h)
+| where AccountsAttempted > 5
