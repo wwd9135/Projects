@@ -49,3 +49,46 @@ SigninLogs
 | summarize AccountsAttempted = dcount(UserPrincipalName) 
     by IPAddress, bin(TimeGenerated, 1h)
 | where AccountsAttempted > 5
+
+# 100 attempts to login from an IP address in a single day./
+SecurityEvent
+| where EventID == 4625
+| summarize AccountsAttempted = dcount(UserPrincipalName) 
+    by IpAddress, bin(TimeGenerated, 1d)
+| where AccountsAttempted > 100
+
+# BruteForce target, 100 against a specific device
+SecurityEvent
+| where EventID == 4625
+| summarize FailedAttempts = count()
+    by Computer, bin(TimeGenerated, 1d)
+| where FailedAttempts > 100
+
+# Find security alerts, filter for hostnames, severity/ status.
+SecurityIncident
+| mv-expand AlertIds to typeof(string)
+| join kind=inner (
+    SecurityAlert
+    | where AlertSeverity == "High"
+    | where Status != "Closed"
+    | project SystemAlertId, Entities
+) on $left.AlertIds == $right.SystemAlertId
+| extend E = parse_json(Entities)
+| mv-expand E
+| where tostring(E.Type) =~ "host"
+| extend HostName = coalesce(tostring(E.HostName), tostring(E.FQDN), tostring(E.Name))
+| where isnotempty(HostName)
+
+# Security incident closed in last 90 days with high severity, gives MTTR/ close.
+SecurityIncident
+| where Severity == "High"
+| where TimeGenerated > ago(90d)
+| extend duration = datetime_diff ('minute', ClosedTime, CreatedTime)
+| summarize avg(duration)
+
+# Location not UK/ US and successful connection in last 48 hours..
+ SigninLogs
+| where Location  !in ('GB','US')
+| where TimeGenerated > ago(2d)
+| where ResultType == 0
+| project ResultType, UserPrincipalName, Location, TimeGenerated, Status
