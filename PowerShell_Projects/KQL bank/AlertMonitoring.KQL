@@ -92,3 +92,20 @@ SecurityIncident
 | where TimeGenerated > ago(2d)
 | where ResultType == 0
 | project ResultType, UserPrincipalName, Location, TimeGenerated, Status
+
+# Audit & SignInLog table correlation. 
+SigninLogs
+| where TimeGenerated > ago(24h)
+| project SignInTime = TimeGenerated,
+          UserPrincipalName,
+          IPAddress,
+          CorrelationId
+| join kind=inner (
+    AuditLogs
+    | where TimeGenerated > ago(24h)
+    | project AuditTime = TimeGenerated,
+              OperationName,
+              InitiatedBy = tostring(InitiatedBy.user.userPrincipalName),
+              CorrelationId
+) on CorrelationId
+| order by SignInTime desc
