@@ -34,6 +34,7 @@ if (-not (Test-Path $OutDir)) {
 }
 $JsonPath = "$OutDir\Trig.json"
 $HashPath = "$OutDir\Trig_Hash.log"
+# 
 
 if (-not (Test-Path $OutDir)) {
     New-Item -ItemType Directory -Path $OutDir | Out-Null
