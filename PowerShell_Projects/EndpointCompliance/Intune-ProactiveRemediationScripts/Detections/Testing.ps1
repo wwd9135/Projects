@@ -1,4 +1,4 @@
-$issues = @()
+﻿$issues = @()
 
 # --- Attempt Signature Update ---
 try {

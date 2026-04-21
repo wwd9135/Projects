@@ -1,4 +1,4 @@
-[version]$MinimumPlatformVersion = '4.18.26020.6'
+[version]$MinimumPlatformVersion = '4.18.26030.3'
 
 [version]$AMServiceVersion = Get-MpComputerStatus | Select-Object -ExpandProperty AMServiceVersion
 
