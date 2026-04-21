@@ -4,11 +4,11 @@ $ProgramFiles64 = ${env:ProgramW6432}
 $IbsaDLL = "$ProgramFiles64\Phantom\IBSA\ibsa.dll"
 $MinVersion = [version]'6.5.253.0'
 
-if (Test-Path $IbsaDLL) {
-    $CurrentVersion = [version](Get-Item $IbsaDLL).VersionInfo.FileVersionRaw
+if (-not (Test-Path $IbsaDLL)) {
+    Exit 1 # DLL not found, not installed
 }
+$CurrentVersion = [version](Get-Item $IbsaDLL).VersionInfo.FileVersionRaw
 if ($CurrentVersion -lt $MinVersion) {
-    Exit 1  # NON-compliant
-} else {
-    Exit 0  # Compliant
+    Exit 1
 }
+Exit 0

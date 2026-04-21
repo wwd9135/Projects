@@ -1,34 +1,14 @@
-﻿$issues = @()
+﻿# Force 64-bit Program Files even when script runs in 32-bit Intune context
+$ProgramFiles64 = ${env:ProgramW6432}
 
-# --- Attempt Signature Update ---
-try {
-    Update-MpSignature -ErrorAction Stop
-    Start-Sleep -Seconds 45 # Give it time to pull down signatures
+$IbsaDLL = "$ProgramFiles64\Phantom\IBSA\ibsa.dll"
+$MinVersion = [version]'6.5.253.0'
 
-    $MPStat = Get-MpComputerStatus -ErrorAction Stop
-    if ($MPStat.AntivirusSignatureAge -gt 3) {
-        $issues += "Signatures still stale after update attempt ($($MPStat.AntivirusSignatureAge) days)"
-    }
-} catch {
-    $issues += "Signature update failed: $($_.Exception.Message)"
+if (-not (Test-Path $IbsaDLL)) {
+    Exit 1 # DLL not found, not installed
 }
-
-# --- Passive Mode ---
-# Cannot auto-remediate - surface it clearly for manual investigation
-try {
-    $MPStat = Get-MpComputerStatus -ErrorAction Stop
-    if ($MPStat.AMRunningMode -ne 'Normal') {
-        $issues += "Engine mode abnormal ($($MPStat.AMRunningMode)) - manual investigation required"
-    }
-} catch {
-    $issues += "Could not verify engine mode post-remediation"
+$CurrentVersion = [version](Get-Item $IbsaDLL).VersionInfo.FileVersionRaw
+if ($CurrentVersion -lt $MinVersion) {
+    Exit 1
 }
-
-# --- Final Exit ---
-if ($issues.Count -gt 0) {
-    Write-Output "REMEDIATION INCOMPLETE: $($issues -join ' | ')"
-    exit 1
-}
-
-Write-Output "Defender Engine Health: REMEDIATED"
-exit 0
+Exit 0
