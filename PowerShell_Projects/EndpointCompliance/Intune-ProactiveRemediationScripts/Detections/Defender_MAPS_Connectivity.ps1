@@ -1,7 +1,7 @@
 # 3. MAPS Connectivity
 $MpCmdRun = "$Env:ProgramFiles\Windows Defender\MpCmdRun.exe"
 if (-not (Test-Path $MpCmdRun)) {
-    #Write-Host "MpCmdRun.exe not found at $MpCmdRun" -ForegroundColor Red
+    Write-Host "MpCmdRun.exe not found at $MpCmdRun" -ForegroundColor Red
     exit 1
 } else {
     $Output   = & $MpCmdRun -ValidateMapsConnection 2>&1
@@ -19,14 +19,14 @@ if (-not (Test-Path $MpCmdRun)) {
             $AgeDiff      = $Now - $Timestamp
 
             if ($AgeDiff.TotalHours -ge 3) {
-                #Write-Host "FAIL: Last successful MAPS connection was $([math]::Round($AgeDiff.TotalHours, 1)) hours ago ($TimestampStr)" -ForegroundColor Red
+                Write-Host "FAIL: Last successful MAPS connection was $([math]::Round($AgeDiff.TotalHours, 1)) hours ago ($TimestampStr)" -ForegroundColor Red
                 exit 1
             } else {
-                #Write-Host "PASS: Last successful MAPS connection was $([math]::Round($AgeDiff.TotalMinutes, 0)) minutes ago ($TimestampStr)" -ForegroundColor Green
+                Write-Host "PASS: Last successful MAPS connection was $([math]::Round($AgeDiff.TotalMinutes, 0)) minutes ago ($TimestampStr)" -ForegroundColor Green
                 exit 0
             }
         } else {
-            #Write-Host "FAIL: Could not determine last successful MAPS connection time" -ForegroundColor Red
+            Write-Host "FAIL: Could not determine last successful MAPS connection time" -ForegroundColor Red
             exit 1
         }
     }

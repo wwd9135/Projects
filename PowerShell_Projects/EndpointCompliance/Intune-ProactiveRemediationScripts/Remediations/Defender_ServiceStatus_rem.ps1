@@ -7,6 +7,9 @@ if ($defService.Status -ne 'Running') {
     Start-Service -Name 'WinDefend' -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 5 # Wait for the service to attempt to start
     $defService.Refresh()
-    if ($defService.Status -ne 'Running') { exit 1 }
+    if ($defService.Status -ne 'Running') {
+        exit 1
+        write-host "Failed to start Windows Defender Service - likely due to Tamper Protection. Manual remediation required." -ForegroundColor Red
+    }
 }
 exit 0
