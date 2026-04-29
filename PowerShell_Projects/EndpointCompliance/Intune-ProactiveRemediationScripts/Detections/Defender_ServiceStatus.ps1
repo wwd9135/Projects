@@ -12,4 +12,4 @@ if ($defService.Status -ne 'Running') {
 
 Write-Output "WinDefend service running"
 exit 0
-#
+# 
