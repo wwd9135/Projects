@@ -57,13 +57,13 @@ class Normaliser:
 
         meta = self._parse_meta(raw.get('Meta', {}), payload_sha256)
 
-        payload = raw.get('Payload', {})
+        payload = raw.get('Payload') or {}
         artefacts = PersistenceArtefacts(
             meta=meta,
-            registry_run_keys=self._parse_run_keys(payload.get('RegistryRunKeys', [])),
-            scheduled_tasks=self._parse_scheduled_tasks(payload.get('ScheduledTasks', [])),
-            services=self._parse_services(payload.get('Services', [])),
-            wmi_subscriptions=self._parse_wmi(payload.get('WmiSubscriptions', [])),
+            registry_run_keys=self._parse_run_keys(payload.get('RegistryRunKeys') or []),
+            scheduled_tasks=self._parse_scheduled_tasks(payload.get('ScheduledTasks') or []),
+            services=self._parse_services(payload.get('Services') or []),
+            wmi_subscriptions=self._parse_wmi(payload.get('WmiSubscriptions') or []),
         )
 
         logger.debug(
