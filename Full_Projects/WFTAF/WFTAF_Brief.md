@@ -12,7 +12,7 @@ WFTAF is a modular **Detection-as-Code (DaC)** framework designed to bridge the 
 
 Traditional triage tools aggregate data. WFTAF **detects intent** — normalising Windows telemetry into a Sigma-compatible schema and executing rule-based logic against it to surface adversarial TTPs with surgical precision, without requiring a full SIEM stack.
 
-The framework is persistence-first, targeting **MITRE ATT&CK TA0003** — the tactic most commonly associated with long-dwell intrusions and the hardest to detect with out-of-the-box tooling.
+The framework is persistence-first, targeting **MITRE ATT&CK TA0003**  and others— the tactic most commonly associated with long-dwell intrusions and the hardest to detect with out-of-the-box tooling.
 
 ---
 
@@ -104,7 +104,7 @@ Each technique maps to one or more Sigma rules in `/rules` and a corresponding A
 ## Roadmap
 
 - [x] **Phase 1** — Modular PowerShell collectors for core persistence artefacts
-- [ ] **Phase 2** — Python normalisation layer with full OSSEM/Sigma field mapping
+- [Pending ] **Phase 2** — Python normalisation layer with full OSSEM/Sigma field mapping
 - [ ] **Phase 3** — Sigma match engine — ingest and execute YAML rule logic against normalised output
 - [ ] **Phase 4** — Validate findings, produce a report for quicker analysis.
 

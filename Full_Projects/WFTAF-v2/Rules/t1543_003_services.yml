@@ -1,0 +1,39 @@
+title: Windows Service with Non-Standard Binary Path
+id: 3b4c5d6e-2b3c-4d5e-6f7a-8b9c0d1e2f3a
+status: stable
+description: >
+  Detects auto-start Windows services whose binary executes from a path outside
+  of standard system directories. Adversaries frequently install malicious services
+  pointing to user-writable locations (T1543.003).
+references:
+  - https://attack.mitre.org/techniques/T1543/003/
+  - https://github.com/SigmaHQ/sigma/blob/master/rules/windows/builtin/system/service_control_manager/win_system_service_install.yml
+author: William Richardson
+date: 2024/01/15
+modified: 2024/06/01
+tags:
+  - attack.persistence
+  - attack.privilege_escalation
+  - attack.t1543.003
+logsource:
+  category: service_creation
+  product: windows
+detection:
+  selection_suspicious_path:
+    CommandLine|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\Users\Public\'
+      - '\ProgramData\'
+      - '\Desktop\'
+  filter_known_good:
+    Image|startswith:
+      - 'C:\Windows\System32\'
+      - 'C:\Windows\SysWOW64\'
+      - 'C:\Program Files\'
+      - 'C:\Program Files (x86)\'
+  condition: selection_suspicious_path and not filter_known_good
+falsepositives:
+  - Third-party applications that install services outside of Program Files
+  - Development or test environments with custom service paths
+level: high
