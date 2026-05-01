@@ -1,7 +1,7 @@
 # WFTAF-v2: Windows Forensic Triage & Analysis Framework
 
 **Author:** William Richardson
-**Status:** Active Development — Phase 3: Sigma Detection Engine
+**Status:** Active Development — Phase 3: Sigma Detection Engine (In progress, fine details require attention its almost complete)
 **Focus:** Detection-as-Code, Windows Persistence (MITRE ATT&CK TA0003), Vendor-Neutral Telemetry Analysis
 
 ---
@@ -146,5 +146,5 @@ Output: `Output/detections_<timestamp>.json`
 
 - [x] **Phase 1** — Modular PowerShell collectors targeting core persistence artefact types
 - [x] **Phase 2** — Python normalisation layer with full OSSEM/Sigma field mapping
-- [ ] **Phase 3** — Sigma match engine — ingest and execute YAML rule logic against normalised output
+- [x] **Phase 3** — Sigma match engine — ingest and execute YAML rule logic against normalised output
 - [ ] **Phase 4** — Per-technique detection recall report with false-positive benchmarking
