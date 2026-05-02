@@ -27,10 +27,13 @@ orders = [
 # Calculate total spend per customer
 # Return as a dictionary
 # Expected: {"William": 1298, "John": 1498, "Sarah": 299}
-new = []
-for customer in orders:
-    new.append(customer["customer" :"amount"])
-
+new = {}
+for order in orders:
+    #print(order['customer'])  # gives you "William"
+    #print(order['amount'])    # gives you 999
+    if new.get(order["customer"],0) == 0:
+        new["customer"] = order["customer"]
+    print(new)
 
 numbers = [1, 2, 2, 3, 3, 3, 4, 4, 4, 4]
 # Count occurrences of each number
