@@ -1,15 +1,24 @@
-# 1. Attempt to start the service (May fail if tamper protection enabled)
 $defService = Get-Service -Name 'WinDefend' -ErrorAction SilentlyContinue
 if ($null -eq $defService) {
-    exit 1 # Service not found
+    Write-Output "FAIL: WinDefend service not found on this device - service may have been removed or is not installed"
+    exit 1
 }
+
+Write-Output "INFO: WinDefend service found - current status: $($defService.Status)"
+
 if ($defService.Status -ne 'Running') {
+    Write-Output "INFO: WinDefend is not running - attempting to start..."
     Start-Service -Name 'WinDefend' -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 5 # Wait for the service to attempt to start
+    Start-Sleep -Seconds 5
     $defService.Refresh()
+
     if ($defService.Status -ne 'Running') {
+        Write-Output "FAIL: WinDefend could not be started - current status: $($defService.Status). Likely blocked by Tamper Protection - manual remediation required"
         exit 1
-        write-host "Failed to start Windows Defender Service - likely due to Tamper Protection. Manual remediation required." -ForegroundColor Red
     }
+
+    Write-Output "SUCCESS: WinDefend successfully started"
 }
+
+Write-Output "SUCCESS: WinDefend is running - no action required"
 exit 0

@@ -1,34 +1,45 @@
 $issues = @()
 
-# --- Attempt Signature Update ---
+Write-Output "INFO: Starting Defender signature update..."
 try {
     Update-MpSignature -ErrorAction Stop
-    Start-Sleep -Seconds 45 # Give it time to pull down signatures
+    Write-Output "INFO: Signature update command issued - waiting 45 seconds for completion..."
+    Start-Sleep -Seconds 45
 
     $MPStat = Get-MpComputerStatus -ErrorAction Stop
+    Write-Output "INFO: Signature age post-update: $($MPStat.AntivirusSignatureAge) day(s)"
+
     if ($MPStat.AntivirusSignatureAge -gt 3) {
+        Write-Output "FAIL: Signatures still stale after update attempt - age: $($MPStat.AntivirusSignatureAge) days"
         $issues += "Signatures still stale after update attempt ($($MPStat.AntivirusSignatureAge) days)"
+    } else {
+        Write-Output "SUCCESS: Signatures are current after update"
     }
 } catch {
+    Write-Output "FAIL: Signature update threw an exception - $($_.Exception.Message)"
     $issues += "Signature update failed: $($_.Exception.Message)"
 }
 
-# --- Passive Mode ---
-# Cannot auto-remediate - surface it clearly for manual investigation
+Write-Output "INFO: Checking Defender engine running mode..."
 try {
     $MPStat = Get-MpComputerStatus -ErrorAction Stop
+    Write-Output "INFO: Current AMRunningMode: $($MPStat.AMRunningMode)"
+
     if ($MPStat.AMRunningMode -ne 'Normal') {
+        Write-Output "FAIL: Engine not in Normal mode - currently: $($MPStat.AMRunningMode). Cannot auto-remediate - manual investigation required"
         $issues += "Engine mode abnormal ($($MPStat.AMRunningMode)) - manual investigation required"
+    } else {
+        Write-Output "SUCCESS: Engine running in Normal mode"
     }
 } catch {
-    $issues += "Could not verify engine mode post-remediation"
+    Write-Output "FAIL: Could not query AMRunningMode - $($_.Exception.Message)"
+    $issues += "Could not verify engine mode: $($_.Exception.Message)"
 }
 
-# --- Final Exit ---
 if ($issues.Count -gt 0) {
-    Write-Output "REMEDIATION INCOMPLETE: $($issues -join ' | ')"
+    Write-Output "FAIL: Remediation incomplete - $($issues.Count) issue(s): $($issues -join ' | ')"
     exit 1
 }
 
-Write-Output "Defender Engine Health: REMEDIATED"
+Write-Output "SUCCESS: Defender engine health fully remediated"
 exit 0

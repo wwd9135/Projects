@@ -1,17 +1,25 @@
-# 1. Attempt to start the service (May fail if tamper protection enabled)
-$defService = Get-Service -Name 'Tenable Nessus Agent' -ErrorAction SilentlyContinue
-if ($null -eq $defService) {
-    exit 1 
-    write-host "Service not found" -ForegroundColor Red
+$nessusService = Get-Service -Name 'Tenable Nessus Agent' -ErrorAction SilentlyContinue
+if ($null -eq $nessusService) {
+    Write-Output "FAIL: Tenable Nessus Agent service not found - agent may not be installed on this device"
+    exit 1
 }
-if ($defService.Status -ne 'Running') {
+
+Write-Output "INFO: Tenable Nessus Agent service found - current status: $($nessusService.Status)"
+
+if ($nessusService.Status -ne 'Running') {
+    Write-Output "INFO: Nessus Agent is not running - attempting to start..."
     Start-Service -Name 'Tenable Nessus Agent' -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 5 # Wait for the service to attempt to start
-    $defService.Refresh()
-    if ($defService.Status -ne 'Running') {
+    Start-Sleep -Seconds 5
+    $nessusService.Refresh()
+    Write-Output "INFO: Nessus Agent status after start attempt: $($nessusService.Status)"
+
+    if ($nessusService.Status -ne 'Running') {
+        Write-Output "FAIL: Tenable Nessus Agent could not be started - current status: $($nessusService.Status). Manual investigation required"
         exit 1
-        write-host "Failed to start Tenable Nessus Agent" -ForegroundColor Red
     }
+
+    Write-Output "SUCCESS: Tenable Nessus Agent successfully started"
 }
+
+Write-Output "SUCCESS: Tenable Nessus Agent is running - no action required"
 exit 0
-write-host "Tenable Nessus Agent is running" -ForegroundColor Green
