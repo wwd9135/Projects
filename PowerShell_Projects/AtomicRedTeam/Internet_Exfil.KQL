@@ -3,8 +3,7 @@ let endtime = 1d;
 let timeframe = 1h;
 let scorethreshold = 5;
 let bytessentperhourthreshold = 10;
-let PrivateIPregex = @'^127\.|^10\.|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-1]\.|^192\.168\.';
-let TimeSeriesData = (union isfuzzy=true
+]
 (
 VMConnection
 | where TimeGenerated between (startofday(ago(starttime))..startofday(ago(endtime)))

@@ -48,7 +48,7 @@ python main_parser.py --input ../Evidence/Triage_PC01.json --analyze
 
 ### Roadmap
 - ✔️ Phase 1: Standardize JSON schema for all PowerShell collectors.
-- [ ] Phase 2: Implement Python heuristic engine (Regex/Signature based).
+- [✔️] Phase 2: Implement Python heuristic engine (Regex/Signature based).
 - [ ] Phase 3: Integrate Local LLM (Llama 3/Ollama) for anomaly deduction.
 - [ ] Phase 4: Develop specialized C2 and Network traffic analysis modules.
 

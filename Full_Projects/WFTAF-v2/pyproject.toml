@@ -1,0 +1,25 @@
+[project]
+name = "wftaf"
+version = "2.0.0"
+description = "Windows Forensic Triage & Analysis Framework — persistence-focused detection pipeline"
+authors = [
+    { name = "William Richardson", email = "willrichardson20025@gmail.com" }
+]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+[project.scripts]
+wftaf = "main:main"
+
+[tool.pytest.ini_options]
+testpaths = ["Tests"]

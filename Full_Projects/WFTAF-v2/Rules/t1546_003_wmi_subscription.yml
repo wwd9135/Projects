@@ -1,0 +1,36 @@
+title: WMI Event Subscription Persistence — Active Consumer Binding
+id: 5c6d7e8f-3c4d-5e6f-7a8b-9c0d1e2f3a4b
+status: stable
+description: >
+  Detects any active WMI filter-to-consumer binding, which is the mechanism
+  used by adversaries to achieve fileless, persistent code execution on system
+  events (T1546.003). Bindings using CommandLine or ActiveScript consumers are
+  particularly high-fidelity indicators of malicious intent.
+references:
+  - https://attack.mitre.org/techniques/T1546/003/
+  - https://www.blackhat.com/docs/us-15/materials/us-15-Graeber-Abusing-Windows-Management-Instrumentation-WMI-To-Build-A-Persistent-Asynchronous-And-Fileless-Backdoor.pdf
+  - https://github.com/SigmaHQ/sigma/blob/master/rules/windows/wmi_event/sysmon_wmi_event_subscription.yml
+author: William Richardson
+date: 2024/01/15
+modified: 2024/06/01
+tags:
+  - attack.persistence
+  - attack.t1546.003
+logsource:
+  category: wmi_event
+  product: windows
+detection:
+  selection_high_risk_consumer:
+    consumer_type|contains:
+      - 'CommandLineEventConsumer'
+      - 'ActiveScriptEventConsumer'
+  filter_known_management:
+    filter_query|contains:
+      - 'SCCM'
+      - 'SMS_'
+      - 'Microsoft\Windows\WMI'
+  condition: selection_high_risk_consumer and not filter_known_management
+falsepositives:
+  - SCCM, MECM, and other Microsoft management tooling
+  - Third-party monitoring agents using WMI subscriptions
+level: critical

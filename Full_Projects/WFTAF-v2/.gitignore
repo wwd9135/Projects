@@ -1,0 +1,21 @@
+# Collector output — may contain sensitive host telemetry
+Output/payload.json
+Output/payload.hash
+Output/detections_*.json
+
+# Track the Output directory itself
+!Output/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.env
+*.egg-info/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
