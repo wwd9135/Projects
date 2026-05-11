@@ -1,4 +1,4 @@
-$defService = Get-Service -Name 'WinDefend' -ErrorAction SilentlyContinue
+$defService = Get-Service -Name 'WinDefend'
 if ($null -eq $defService) {
     Write-Output "FAIL: WinDefend service not found on this device - service may have been removed or is not installed"
     exit 1
@@ -9,7 +9,7 @@ Write-Output "INFO: WinDefend service found - current status: $($defService.Stat
 if ($defService.Status -ne 'Running') {
     Write-Output "INFO: WinDefend is not running - attempting to start..."
     Start-Service -Name 'WinDefend' -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 5
+    Start-Sleep -Seconds 45
     $defService.Refresh()
 
     if ($defService.Status -ne 'Running') {
