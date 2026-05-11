@@ -30,7 +30,7 @@ try {
         $issues += "Engine mode abnormal ($($MPStat.AMRunningMode)) - manual investigation required"
     } else {
         Write-Output "SUCCESS: Engine running in Normal mode"
-    }
+    }#
 } catch {
     Write-Output "FAIL: Could not query AMRunningMode - $($_.Exception.Message)"
     $issues += "Could not verify engine mode: $($_.Exception.Message)"
