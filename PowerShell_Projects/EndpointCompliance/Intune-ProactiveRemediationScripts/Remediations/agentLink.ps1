@@ -71,4 +71,4 @@ if ($AgentStatus -match "not linked") {
 }
 
 Write-Output "SUCCESS: Tenable Agent is linked to cloud.tenable.com"
-exit 0
+exit 0#
