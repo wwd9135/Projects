@@ -1,106 +1,120 @@
-# test script for verbose detection and debugging - checks for VS Code installation and version with detailed output
-# Detection script (PoC mode - no version enforcement)
-# Triggers remediation ONLY if policy is missing
+# Detection - VS Code AllowedExtensions policy compliance
+# Write-Host output is captured by Intune Management Extension (IME) automatically
 
-$regpath = "HKLM:\SOFTWARE\Policies\Microsoft\VSCode"
-$name = "AllowedExtensions"
+# --- Config ---
+$regpath              = "HKLM:\SOFTWARE\Policies\Microsoft\VSCode"
+$name                 = "AllowedExtensions"
+$minimumVersion       = [Version]"1.96.0"
+$expectedPolicyValue  = '{"*": true, "anthropic": false, "openai": false}'
 
-Write-Host "========== START VS CODE DETECTION =========="
+Write-Host "===== VS Code Policy Detection ====="
+Write-Host "Running as: $(whoami)"
+Write-Host "Expected policy value: $expectedPolicyValue"
 Write-Host ""
 
-$vsCodePath = $null
+# --- Locate VS Code  ---
+$vsCodePath  = $null
 $installType = $null
-$checkedPaths = @()
 
-# --- MACHINE INSTALL CHECK ---
 $machinePath = "$env:ProgramFiles\Microsoft VS Code\Code.exe"
-$checkedPaths += $machinePath
-
-Write-Host "[CHECK] Machine install path:"
-Write-Host "        $machinePath"
-
+Write-Host "[CHECK] Machine-wide install: $machinePath"
 if (Test-Path $machinePath) {
-    Write-Host "        FOUND"
-    $vsCodePath = $machinePath
+    $vsCodePath  = $machinePath
     $installType = "Machine"
+    Write-Host "  -> FOUND"
 } else {
-    Write-Host "        NOT FOUND"
+    Write-Host "  -> not present"
 }
 
-# --- USER INSTALL CHECK ---
 if (-not $vsCodePath) {
-
-    Write-Host ""
-    Write-Host "[CHECK] Scanning user profiles..."
-
+    Write-Host "[CHECK] Scanning user profiles for per-user installs..."
     Get-ChildItem "C:\Users" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-
         $userCodePath = Join-Path $_.FullName "AppData\Local\Programs\Microsoft VS Code\Code.exe"
-        $checkedPaths += $userCodePath
-
-        Write-Host "        Checking: $userCodePath"
-
+        Write-Host "  Checking: $userCodePath"
         if (Test-Path $userCodePath) {
-            Write-Host "        FOUND under user: $($_.Name)"
-            $vsCodePath = $userCodePath
+            $vsCodePath  = $userCodePath
             $installType = "User ($($_.Name))"
-            return
-        } else {
-            Write-Host "        Not found"
+            Write-Host "  -> FOUND in $($_.Name) profile"
         }
     }
 }
 
-# --- RESULT: INSTALL STATE ---
-Write-Host ""
-
 if (-not $vsCodePath) {
-    Write-Host "[RESULT] VS Code not installed"
-    Write-Host "Checked paths:"
-    $checkedPaths | ForEach-Object { Write-Host " - $_" }
-
-    Write-Host "Detection Result: 0 (Not applicable)"
-    Write-Host "========== END =========="
-    return
+    Write-Host ""
+    Write-Host "[RESULT] VS Code not installed - no action needed"
+    Write-Host "[EXIT] 0 (COMPLIANT)"
+    exit 0
 }
 
-Write-Host "[RESULT] VS Code FOUND"
-Write-Host "Install Type : $installType"
-Write-Host "Executable   : $vsCodePath"
-
-# --- REGISTRY CHECK ---
 Write-Host ""
-Write-Host "[CHECK] Registry policy..."
+Write-Host "[INFO] VS Code path: $vsCodePath"
+Write-Host "[INFO] Install type: $installType"
 
-Write-Host "    Path : $regpath"
-Write-Host "    Name : $name"
-
-if (Test-Path $regpath) {
-    Write-Host "    Registry path exists"
-
-    $regValue = Get-ItemProperty -Path $regpath -Name $name -ErrorAction SilentlyContinue
-
-    if ($regValue) {
-        Write-Host "    POLICY FOUND"
-        Write-Host "    Value Data : $($regValue.$name)"
-        Write-Host "Detection Result: 0 (Compliant)"
-    }
-    else {
-        Write-Host "    POLICY MISSING (value not set)"
-        Write-Host "Detection Result: 1 (Remediation required)"
-    }
-}
-else {
-    Write-Host "    Registry path missing"
-    Write-Host "    POLICY MISSING"
-    Write-Host "Detection Result: 1 (Remediation required)"
-}
-
-# --- SUMMARY ---
+# --- Validate version ---
 Write-Host ""
-Write-Host "========== SUMMARY =========="
-Write-Host "Install Type : $installType"
-Write-Host "Path         : $vsCodePath"
-Write-Host "Registry Path Checked : $regpath"
-Write-Host "Registry Value        : $name"
-Write-Host "========== END =========="
+Write-Host "[CHECK] Reading VS Code version..."
+try {
+    $versionString    = (Get-Item $vsCodePath).VersionInfo.ProductVersion
+    $installedVersion = [Version]$versionString
+    Write-Host "  -> Version detected: v$installedVersion"
+} catch {
+    Write-Host "  -> ERROR reading version: $($_.Exception.Message)"
+    Write-Host ""
+    Write-Host "[RESULT] Version could not be determined - skipping"
+    Write-Host "[EXIT] 0 (COMPLIANT - skipped)"
+    exit 0
+}
+
+Write-Host "[CHECK] Comparing against minimum v$minimumVersion..."
+if ($installedVersion -lt $minimumVersion) {
+    Write-Host "  -> v$installedVersion is BELOW minimum v$minimumVersion"
+    Write-Host "  -> Feature not supported in this version"
+    Write-Host ""
+    Write-Host "[RESULT] VS Code version pre-dates AllowedExtensions feature"
+    Write-Host "[EXIT] 0 (COMPLIANT - feature unavailable)"
+    exit 0
+}
+Write-Host "  -> v$installedVersion meets minimum requirement"
+
+# --- Read current policy value ---
+Write-Host ""
+Write-Host "[CHECK] Reading current policy from registry..."
+Write-Host "  Path: $regpath"
+Write-Host "  Value: $name"
+
+$currentValue = $null
+try {
+    $currentValue = (Get-ItemProperty -Path $regpath -Name $name -ErrorAction Stop).$name
+    Write-Host "  -> Current value found:"
+    Write-Host "     $currentValue"
+} catch {
+    Write-Host "  -> Registry key/value NOT present"
+}
+
+# --- Compare current vs expected ---
+Write-Host ""
+Write-Host "[CHECK] Comparing current vs expected policy..."
+
+if ($null -eq $currentValue) {
+    Write-Host "  -> Policy missing entirely"
+    Write-Host ""
+    Write-Host "[RESULT] Policy not set - remediation required"
+    Write-Host "[EXIT] 1 (NON-COMPLIANT)"
+    exit 1
+}
+
+if ($currentValue -ceq $expectedPolicyValue) {
+    Write-Host "  -> Values MATCH exactly"
+    Write-Host ""
+    Write-Host "[RESULT] Policy matches expected value"
+    Write-Host "[EXIT] 0 (COMPLIANT)"
+    exit 0
+} else {
+    Write-Host "  -> Values DIFFER (drift detected)"
+    Write-Host "     Current : $currentValue"
+    Write-Host "     Expected: $expectedPolicyValue"
+    Write-Host ""
+    Write-Host "[RESULT] Policy value drift - remediation required"
+    Write-Host "[EXIT] 1 (NON-COMPLIANT)"
+    exit 1
+}
