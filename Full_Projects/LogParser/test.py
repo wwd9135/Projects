@@ -10,4 +10,4 @@ df = pd.DataFrame({
 # Show customer, product, amount
 
 df['dept_max'] = df.groupby('customer')['amount'].transform('max')
-print(df[['customer', 'product', 'amount', 'dept_max']])
+print(df[['customer', 'product', 'amount', 'dept_max']]).
