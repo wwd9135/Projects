@@ -11,3 +11,4 @@ DeviceLogonEvents
 | project TimeGenerated, RemoteIP, RemoteIPType, ActionType, LogonType, AccountDomain, AccountName
 | sort by TimeGenerated desc
 
+##
