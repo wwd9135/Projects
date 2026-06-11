@@ -1,6 +1,5 @@
 # WU-Diag - READ-ONLY Windows Update check. No admin needed. Changes nothing.
-# Paste into PowerShell, press Enter, copy all output back.
-
+# Paste into PowerShell, press Enter, copy all output back.#
 $ErrorActionPreference = 'Continue'
 $ProgressPreference     = 'SilentlyContinue'
 
